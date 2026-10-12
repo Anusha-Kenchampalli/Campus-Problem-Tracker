@@ -1,8 +1,8 @@
-import Department from '../models/Department.js';
+import { getCollection, saveCollection } from '../config/jsonStore.js';
 
 export const getDepartments = async (req, res) => {
   try {
-    const departments = await Department.find({});
+    const departments = getCollection('departments');
     return res.json({ success: true, departments });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -12,14 +12,25 @@ export const getDepartments = async (req, res) => {
 export const createDepartment = async (req, res) => {
   try {
     const deptData = req.body;
-    const newDept = await Department.create({
-      dept_id: `dept_${Date.now()}`,
-      ...deptData,
+    const departments = getCollection('departments');
+
+    const newDept = {
+      id: `dept_${Date.now()}`,
+      name: deptData.name || '',
+      code: (deptData.code || '').toUpperCase(),
+      description: deptData.description || '',
+      head: deptData.head || '',
+      contact_email: deptData.contact_email || '',
+      phone: deptData.phone || '',
       active_problems_count: 0,
       resolved_problems_count: 0,
       staff_count: 0,
       status: 'ACTIVE'
-    });
+    };
+
+    departments.push(newDept);
+    saveCollection('departments', departments);
+
     return res.status(201).json({ success: true, department: newDept, message: 'Department created' });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -28,13 +39,14 @@ export const createDepartment = async (req, res) => {
 
 export const updateDepartment = async (req, res) => {
   try {
-    const department = await Department.findOneAndUpdate(
-      { dept_id: req.params.id },
-      req.body,
-      { new: true }
-    );
-    if (!department) return res.status(404).json({ success: false, message: 'Department not found' });
-    return res.json({ success: true, department, message: 'Department updated' });
+    const departments = getCollection('departments');
+    const idx = departments.findIndex(d => d.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ success: false, message: 'Department not found' });
+
+    departments[idx] = { ...departments[idx], ...req.body };
+    saveCollection('departments', departments);
+
+    return res.json({ success: true, department: departments[idx], message: 'Department updated' });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }

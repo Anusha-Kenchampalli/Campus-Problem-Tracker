@@ -1,14 +1,11 @@
-import Problem from '../models/Problem.js';
-import Category from '../models/Category.js';
-import Department from '../models/Department.js';
-import Feedback from '../models/Feedback.js';
+import { getCollection } from '../config/jsonStore.js';
 
 export const getAnalytics = async (req, res) => {
   try {
-    const problems = await Problem.find({});
-    const categories = await Category.find({});
-    const departments = await Department.find({});
-    const feedbackList = await Feedback.find({});
+    const problems = getCollection('problems');
+    const categories = getCollection('categories');
+    const departments = getCollection('departments');
+    const feedbackList = getCollection('feedback');
 
     const statusCounts = {
       reported: problems.filter((p) => p.status === 'REPORTED').length,
@@ -20,15 +17,15 @@ export const getAnalytics = async (req, res) => {
     };
 
     const priorityCounts = {
-      critical: problems.filter((p) => p.priority.admin === 'CRITICAL' || p.priority.user === 'CRITICAL').length,
-      high: problems.filter((p) => p.priority.admin === 'HIGH' || p.priority.user === 'HIGH').length,
-      medium: problems.filter((p) => p.priority.admin === 'MEDIUM' || p.priority.user === 'MEDIUM').length,
-      low: problems.filter((p) => p.priority.admin === 'LOW' || p.priority.user === 'LOW').length
+      critical: problems.filter((p) => p.priority?.admin === 'CRITICAL' || p.priority?.user === 'CRITICAL').length,
+      high: problems.filter((p) => p.priority?.admin === 'HIGH' || p.priority?.user === 'HIGH').length,
+      medium: problems.filter((p) => p.priority?.admin === 'MEDIUM' || p.priority?.user === 'MEDIUM').length,
+      low: problems.filter((p) => p.priority?.admin === 'LOW' || p.priority?.user === 'LOW').length
     };
 
     const categoryDistribution = categories.map((cat) => ({
       category: cat.name,
-      count: problems.filter((p) => p.problem.category_id === cat.cat_id).length + (cat.active_count || 0)
+      count: problems.filter((p) => p.problem?.category_id === cat.id).length + (cat.active_count || 0)
     }));
 
     const departmentDistribution = departments.map((dept) => ({

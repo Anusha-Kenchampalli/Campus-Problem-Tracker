@@ -58,13 +58,13 @@ const AdminLayout = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-slate-950 dark:bg-slate-950 light:bg-slate-50 text-slate-100 dark:text-slate-100 light:text-slate-900 flex overflow-x-hidden transition-colors duration-200">
+    <div className="min-h-screen bg-slate-950 dark:bg-slate-950 light:bg-slate-50 text-slate-100 dark:text-slate-100 light:text-slate-900 flex overflow-hidden transition-colors duration-200">
       <Sidebar
         isOpen={mobileSidebarOpen}
         onClose={() => setMobileSidebarOpen(false)}
         unreadCount={unreadCount}
       />
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen lg:pl-64">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto lg:pl-64">
         <Navbar
           onToggleMobileSidebar={() => setMobileSidebarOpen(true)}
           unreadNotificationsCount={unreadCount}

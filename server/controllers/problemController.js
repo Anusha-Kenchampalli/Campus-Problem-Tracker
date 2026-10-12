@@ -1,9 +1,4 @@
-import Problem from '../models/Problem.js';
-import Category from '../models/Category.js';
-import Location from '../models/Location.js';
-import Department from '../models/Department.js';
-import Staff from '../models/Staff.js';
-import Notification from '../models/Notification.js';
+import { getCollection, saveCollection } from '../config/jsonStore.js';
 
 // Create problem ticket (Student)
 export const createProblem = async (req, res) => {
@@ -13,14 +8,18 @@ export const createProblem = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Title, category, and location are required' });
     }
 
-    const category = await Category.findOne({ cat_id: problemData.category_id });
-    const location = await Location.findOne({ loc_id: problemData.location_id });
+    const categories = getCollection('categories');
+    const locations = getCollection('locations');
+    const problems = getCollection('problems');
 
-    const totalProblems = await Problem.countDocuments();
-    const ticketNum = (totalProblems + 1).toString().padStart(4, '0');
+    const category = categories.find(c => c.id === problemData.category_id);
+    const location = locations.find(l => l.id === problemData.location_id);
+
+    const ticketNum = (problems.length + 1).toString().padStart(4, '0');
     const ticketId = `CPT-2026-${ticketNum}`;
+    const now = new Date().toISOString();
 
-    const newProblem = await Problem.create({
+    const newProblem = {
       ticket_id: ticketId,
       reporter_id: problemData.reporter_id || 'CS24001',
       reporter_name: problemData.reporter_name || 'Alex Johnson',
@@ -38,37 +37,50 @@ export const createProblem = async (req, res) => {
         user: (problemData.priority || 'MEDIUM').toUpperCase(),
         admin: (problemData.priority || 'MEDIUM').toUpperCase()
       },
+      assignment: { department_id: null, department_name: null, staff_id: null, staff_name: null },
       status: 'REPORTED',
       status_history: [
         {
           status: 'REPORTED',
-          timestamp: new Date(),
+          timestamp: now,
           updated_by: problemData.reporter_id || 'CS24001',
-          note: 'Problem reported via campus tracker application'
+          note: 'Problem reported via mobile/web interface'
         }
-      ]
-    });
+      ],
+      resolution: null,
+      created_at: now,
+      updated_at: now
+    };
 
-    // Student Notification
-    await Notification.create({
-      notif_id: `snotif_${Date.now()}`,
-      target: 'STUDENT',
-      user_id: problemData.reporter_id || 'CS24001',
+    problems.push(newProblem);
+    saveCollection('problems', problems);
+
+    // Student notification
+    const studentNotifs = getCollection('student_notifications');
+    studentNotifs.unshift({
+      id: `snotif_${Date.now()}`,
       title: 'Ticket Submitted',
-      message: `Your problem report ${ticketId} (${problemData.title}) has been received.`,
+      message: `Your problem report ${ticketId} (${problemData.title}) has been received successfully.`,
+      timestamp: now,
+      read: false,
       type: 'INFO',
-      ticket_id: ticketId
+      ticket_id: ticketId,
+      user_id: problemData.reporter_id || 'CS24001'
     });
+    saveCollection('student_notifications', studentNotifs);
 
-    // Admin Notification
-    await Notification.create({
-      notif_id: `notif_${Date.now()}`,
-      target: 'ADMIN',
+    // Admin notification
+    const adminNotifs = getCollection('admin_notifications');
+    adminNotifs.unshift({
+      id: `notif_${Date.now()}`,
       title: 'New Problem Ticket',
       message: `New problem reported: ${problemData.title} (${ticketId}).`,
+      timestamp: now,
+      read: false,
       type: (problemData.priority || '').toUpperCase() === 'CRITICAL' ? 'CRITICAL' : 'INFO',
       ticket_id: ticketId
     });
+    saveCollection('admin_notifications', adminNotifs);
 
     return res.status(201).json({
       success: true,
@@ -84,31 +96,38 @@ export const createProblem = async (req, res) => {
 // Get Problems (Filter & Search)
 export const getProblems = async (req, res) => {
   try {
-    const { search, status, priority, category, department, location, sort } = req.query;
-    let filter = {};
+    const { search, status, priority, category, department, location, sort, reporter_id } = req.query;
+    let problems = getCollection('problems');
 
     if (search) {
-      const q = new RegExp(search, 'i');
-      filter['$or'] = [
-        { ticket_id: q },
-        { 'problem.title': q },
-        { reporter_id: q },
-        { 'problem.category_name': q },
-        { 'problem.location_name': q }
-      ];
+      const q = search.toLowerCase();
+      problems = problems.filter(p =>
+        p.ticket_id?.toLowerCase().includes(q) ||
+        p.problem?.title?.toLowerCase().includes(q) ||
+        p.reporter_id?.toLowerCase().includes(q) ||
+        p.problem?.category_name?.toLowerCase().includes(q) ||
+        p.problem?.location_name?.toLowerCase().includes(q)
+      );
     }
 
-    if (status && status !== 'ALL') filter.status = status;
-    if (category && category !== 'ALL') filter['problem.category_id'] = category;
-    if (location && location !== 'ALL') filter['problem.location_id'] = location;
-    if (department && department !== 'ALL') filter['assignment.department_id'] = department;
+    if (reporter_id) {
+      problems = problems.filter(p => p.reporter_id === reporter_id);
+    }
 
+    if (status && status !== 'ALL') problems = problems.filter(p => p.status === status);
+    if (category && category !== 'ALL') problems = problems.filter(p => p.problem?.category_id === category);
+    if (location && location !== 'ALL') problems = problems.filter(p => p.problem?.location_id === location);
+    if (department && department !== 'ALL') problems = problems.filter(p => p.assignment?.department_id === department);
     if (priority && priority !== 'ALL') {
-      filter['$or'] = [{ 'priority.admin': priority }, { 'priority.user': priority }];
+      problems = problems.filter(p => p.priority?.admin === priority || p.priority?.user === priority);
     }
 
-    const sortOption = sort === 'oldest' ? { createdAt: 1 } : { createdAt: -1 };
-    const problems = await Problem.find(filter).sort(sortOption);
+    // Sort
+    problems = problems.sort((a, b) => {
+      const aDate = new Date(a.created_at || 0);
+      const bDate = new Date(b.created_at || 0);
+      return sort === 'oldest' ? aDate - bDate : bDate - aDate;
+    });
 
     return res.json({ success: true, total: problems.length, problems });
   } catch (error) {
@@ -116,20 +135,11 @@ export const getProblems = async (req, res) => {
   }
 };
 
-import mongoose from 'mongoose';
-
-const buildTicketQuery = (id) => {
-  if (!id) return {};
-  if (mongoose.Types.ObjectId.isValid(id)) {
-    return { $or: [{ ticket_id: id }, { _id: id }] };
-  }
-  return { ticket_id: id };
-};
-
 // Get Single Problem by Ticket ID
 export const getProblemById = async (req, res) => {
   try {
-    const problem = await Problem.findOne(buildTicketQuery(req.params.id));
+    const problems = getCollection('problems');
+    const problem = problems.find(p => p.ticket_id === req.params.id);
 
     if (!problem) {
       return res.status(404).json({ success: false, message: 'Problem ticket not found' });
@@ -144,14 +154,16 @@ export const getProblemById = async (req, res) => {
 export const updatePriority = async (req, res) => {
   try {
     const { priority } = req.body;
-    const problem = await Problem.findOneAndUpdate(
-      buildTicketQuery(req.params.id),
-      { 'priority.admin': priority },
-      { new: true }
-    );
+    const problems = getCollection('problems');
+    const idx = problems.findIndex(p => p.ticket_id === req.params.id);
 
-    if (!problem) return res.status(404).json({ success: false, message: 'Ticket not found' });
-    return res.json({ success: true, problem, message: 'Priority updated' });
+    if (idx === -1) return res.status(404).json({ success: false, message: 'Ticket not found' });
+
+    problems[idx].priority = { ...problems[idx].priority, admin: priority };
+    problems[idx].updated_at = new Date().toISOString();
+    saveCollection('problems', problems);
+
+    return res.json({ success: true, problem: problems[idx], message: 'Priority updated' });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
@@ -161,44 +173,53 @@ export const updatePriority = async (req, res) => {
 export const assignProblem = async (req, res) => {
   try {
     const { department_id, staff_id } = req.body;
-    const problem = await Problem.findOne(buildTicketQuery(req.params.id));
+    const problems = getCollection('problems');
+    const idx = problems.findIndex(p => p.ticket_id === req.params.id);
 
-    if (!problem) return res.status(404).json({ success: false, message: 'Ticket not found' });
+    if (idx === -1) return res.status(404).json({ success: false, message: 'Ticket not found' });
 
-    const dept = await Department.findOne({ dept_id: department_id });
-    const staff = await Staff.findOne({ staff_id_code: staff_id });
+    const departments = getCollection('departments');
+    const staff = getCollection('staff');
+    const dept = departments.find(d => d.id === department_id);
+    const staffMember = staff.find(s => s.id === staff_id || s.staff_id === staff_id);
 
-    problem.assignment = {
-      department_id: department_id || problem.assignment.department_id,
-      department_name: dept ? dept.name : problem.assignment.department_name,
-      staff_id: staff_id || problem.assignment.staff_id,
-      staff_name: staff ? staff.name : problem.assignment.staff_name
+    const now = new Date().toISOString();
+    problems[idx].assignment = {
+      department_id: department_id || problems[idx].assignment?.department_id,
+      department_name: dept ? dept.name : problems[idx].assignment?.department_name,
+      staff_id: staff_id || problems[idx].assignment?.staff_id,
+      staff_name: staffMember ? staffMember.name : problems[idx].assignment?.staff_name
     };
 
-    if (problem.status === 'REPORTED' || problem.status === 'VERIFIED') {
-      problem.status = 'ASSIGNED';
+    if (problems[idx].status === 'REPORTED' || problems[idx].status === 'VERIFIED') {
+      problems[idx].status = 'ASSIGNED';
     }
 
-    problem.status_history.push({
+    problems[idx].status_history = problems[idx].status_history || [];
+    problems[idx].status_history.push({
       status: 'ASSIGNED',
-      timestamp: new Date(),
+      timestamp: now,
       updated_by: 'ADMIN001',
-      note: `Assigned to ${dept ? dept.name : 'Department'} ${staff ? `- ${staff.name}` : ''}`
+      note: `Assigned to ${dept ? dept.name : 'Department'}${staffMember ? ` - ${staffMember.name}` : ''}`
     });
+    problems[idx].updated_at = now;
+    saveCollection('problems', problems);
 
-    await problem.save();
-
-    await Notification.create({
-      notif_id: `snotif_${Date.now()}`,
-      target: 'STUDENT',
-      user_id: problem.reporter_id,
+    // Student notification
+    const studentNotifs = getCollection('student_notifications');
+    studentNotifs.unshift({
+      id: `snotif_${Date.now()}`,
       title: 'Ticket Assigned',
       message: `Your ticket ${req.params.id} has been assigned to ${dept ? dept.name : 'Department'}.`,
+      timestamp: now,
+      read: false,
       type: 'INFO',
-      ticket_id: req.params.id
+      ticket_id: req.params.id,
+      user_id: problems[idx].reporter_id
     });
+    saveCollection('student_notifications', studentNotifs);
 
-    return res.json({ success: true, problem, message: 'Assignment updated successfully' });
+    return res.json({ success: true, problem: problems[idx], message: 'Assignment updated successfully' });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
@@ -208,17 +229,19 @@ export const assignProblem = async (req, res) => {
 export const updateStatus = async (req, res) => {
   try {
     const { status, reason, resolution_note } = req.body;
-    const problem = await Problem.findOne(buildTicketQuery(req.params.id));
+    const problems = getCollection('problems');
+    const idx = problems.findIndex(p => p.ticket_id === req.params.id);
 
-    if (!problem) return res.status(404).json({ success: false, message: 'Ticket not found' });
+    if (idx === -1) return res.status(404).json({ success: false, message: 'Ticket not found' });
 
-    const now = new Date();
+    const now = new Date().toISOString();
     let note = `Status changed to ${status}`;
     if (status === 'REJECTED' && reason) note = `Rejected: ${reason}`;
     if (status === 'RESOLVED' && resolution_note) note = `Resolved: ${resolution_note}`;
 
-    problem.status = status;
-    problem.status_history.push({
+    problems[idx].status = status;
+    problems[idx].status_history = problems[idx].status_history || [];
+    problems[idx].status_history.push({
       status,
       timestamp: now,
       updated_by: 'ADMIN001',
@@ -226,32 +249,37 @@ export const updateStatus = async (req, res) => {
     });
 
     if (status === 'REJECTED') {
-      problem.rejection_reason = reason || 'Invalid report';
+      problems[idx].rejection_reason = reason || 'Invalid report';
     }
 
     if (status === 'RESOLVED') {
-      problem.resolution = {
+      problems[idx].resolution = {
         note: resolution_note || 'Issue inspected and successfully resolved by campus staff.',
-        resolved_by: problem.assignment.staff_name || 'Campus Administrator',
+        resolved_by: problems[idx].assignment?.staff_name || 'Campus Administrator',
         resolved_at: now
       };
     }
 
-    await problem.save();
+    problems[idx].updated_at = now;
+    saveCollection('problems', problems);
 
-    await Notification.create({
-      notif_id: `snotif_${Date.now()}`,
-      target: 'STUDENT',
-      user_id: problem.reporter_id,
+    // Student notification
+    const studentNotifs = getCollection('student_notifications');
+    studentNotifs.unshift({
+      id: `snotif_${Date.now()}`,
       title: status === 'RESOLVED' ? 'Problem Resolved 🎉' : `Ticket Status: ${status}`,
       message: status === 'RESOLVED'
-        ? `Your ticket ${req.params.id} (${problem.problem.title}) has been resolved!`
+        ? `Your ticket ${req.params.id} (${problems[idx].problem.title}) has been resolved!`
         : `Status for ticket ${req.params.id} changed to ${status}.`,
+      timestamp: now,
+      read: false,
       type: status === 'RESOLVED' ? 'SUCCESS' : status === 'REJECTED' ? 'WARNING' : 'INFO',
-      ticket_id: req.params.id
+      ticket_id: req.params.id,
+      user_id: problems[idx].reporter_id
     });
+    saveCollection('student_notifications', studentNotifs);
 
-    return res.json({ success: true, problem, message: `Status updated to ${status}` });
+    return res.json({ success: true, problem: problems[idx], message: `Status updated to ${status}` });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }

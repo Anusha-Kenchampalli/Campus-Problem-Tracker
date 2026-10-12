@@ -1,4 +1,4 @@
-import User from '../models/User.js';
+import { getCollection, saveCollection } from '../config/jsonStore.js';
 
 export const login = async (req, res) => {
   try {
@@ -24,22 +24,29 @@ export const login = async (req, res) => {
       return res.json({ success: true, token, user, message: 'Admin login successful' });
     }
 
-    // Student Login
+    // Student Login — uses JSON store, no MongoDB dependency
     if (password === 'password') {
-      let dbUser = await User.findOne({ college_id: cidUpper });
+      const users = getCollection('users');
+      let dbUser = users.find(u => u.college_id === cidUpper);
+
       if (!dbUser) {
-        dbUser = await User.create({
+        // Create user record in JSON store
+        dbUser = {
+          id: `usr_${cidUpper.toLowerCase()}`,
           college_id: cidUpper,
           name: cidUpper === 'CS24001' ? 'Alex Johnson' : `Student ${cidUpper}`,
           email: `${college_id.toLowerCase()}@college.edu`,
           role: 'student',
           department: 'Computer Science & Engineering',
-          year: '3rd Year B.Tech'
-        });
+          year: '3rd Year B.Tech',
+          avatar: null
+        };
+        users.push(dbUser);
+        saveCollection('users', users);
       }
 
       const userObj = {
-        id: dbUser._id,
+        id: dbUser.id || dbUser._id,
         college_id: dbUser.college_id,
         name: dbUser.name,
         email: dbUser.email,
@@ -52,7 +59,7 @@ export const login = async (req, res) => {
       return res.json({ success: true, token, user: userObj, message: 'Student login successful' });
     }
 
-    return res.status(401).json({ success: false, message: 'Invalid credentials. Use CS24001 / password or ADMIN001 / password' });
+    return res.status(401).json({ success: false, message: 'Invalid credentials. Use your College ID with password "password"' });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
@@ -82,8 +89,10 @@ export const getMe = async (req, res) => {
       });
     }
 
+    // Student token resolution — use JSON store
     const studentId = token.replace('jwt_student_token_', '').toUpperCase() || 'CS24001';
-    let dbUser = await User.findOne({ college_id: studentId });
+    const users = getCollection('users');
+    const dbUser = users.find(u => u.college_id === studentId);
 
     if (!dbUser) {
       return res.json({
@@ -104,7 +113,7 @@ export const getMe = async (req, res) => {
     return res.json({
       success: true,
       user: {
-        id: dbUser._id,
+        id: dbUser.id || dbUser._id,
         college_id: dbUser.college_id,
         name: dbUser.name,
         email: dbUser.email,

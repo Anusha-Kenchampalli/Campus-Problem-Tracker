@@ -103,6 +103,32 @@
       "resolved_problems_count": 22,
       "staff_count": 10,
       "status": "ACTIVE"
+    },
+    {
+      "id": "dept_1791796710951",
+      "name": "Electrical",
+      "code": "ELEC2",
+      "description": "Test dept",
+      "head": "Suresh",
+      "contact_email": "dep@college.com",
+      "phone": "9999999999",
+      "active_problems_count": 0,
+      "resolved_problems_count": 0,
+      "staff_count": 0,
+      "status": "ACTIVE"
+    },
+    {
+      "id": "dept_1791797087652",
+      "name": "Plumbing & Sanitation",
+      "code": "PLUMB",
+      "description": "Water supply, restrooms, drainage, water purifiers, and sewage treatment.",
+      "head": "Ramesh Sharma",
+      "contact_email": "Dep@clg.com",
+      "phone": "8989898989",
+      "active_problems_count": 0,
+      "resolved_problems_count": 0,
+      "staff_count": 0,
+      "status": "ACTIVE"
     }
   ],
   "staff": [
@@ -182,6 +208,19 @@
       "role": "Hostel Maintenance Supervisor",
       "active_problems": 3,
       "resolved_problems": 19,
+      "status": "ACTIVE"
+    },
+    {
+      "id": "staff_1791797228767",
+      "staff_id": "STF-8767",
+      "name": "Ramesh",
+      "email": "Ramesh@gmail.com",
+      "phone": "8989898989",
+      "department_id": "dept_1791797087652",
+      "department_name": "Plumbing & Sanitation",
+      "role": "",
+      "active_problems": 0,
+      "resolved_problems": 0,
       "status": "ACTIVE"
     }
   ],
@@ -366,26 +405,38 @@
       },
       "priority": {
         "user": "HIGH",
-        "admin": "HIGH"
+        "admin": "MEDIUM"
       },
       "assignment": {
-        "department_id": null,
-        "department_name": null,
-        "staff_id": null,
-        "staff_name": null
+        "department_id": "dept_plumb",
+        "department_name": "Plumbing & Sanitation",
+        "staff_id": "staff_004",
+        "staff_name": "Ramesh Sharma"
       },
-      "status": "REPORTED",
+      "status": "IN_PROGRESS",
       "status_history": [
         {
           "status": "REPORTED",
           "timestamp": "2026-10-06T05:57:57.246Z",
           "updated_by": "CS24001",
           "note": "Problem reported via mobile/web interface"
+        },
+        {
+          "status": "ASSIGNED",
+          "timestamp": "2026-10-12T09:22:22.451Z",
+          "updated_by": "ADMIN001",
+          "note": "Assigned to Plumbing & Sanitation - Ramesh Sharma"
+        },
+        {
+          "status": "IN_PROGRESS",
+          "timestamp": "2026-10-12T09:22:26.414Z",
+          "updated_by": "ADMIN001",
+          "note": "Status changed to IN_PROGRESS"
         }
       ],
       "resolution": null,
       "created_at": "2026-10-06T05:57:57.246Z",
-      "updated_at": "2026-10-06T05:57:57.246Z"
+      "updated_at": "2026-10-12T09:22:26.414Z"
     },
     {
       "ticket_id": "CPT-2026-0001",
@@ -553,23 +604,41 @@
         "admin": "HIGH"
       },
       "assignment": {
-        "department_id": "dept_maint",
-        "department_name": "General Maintenance",
+        "department_id": "dept_1791797087652",
+        "department_name": "Plumbing & Sanitation",
         "staff_id": "staff_005",
         "staff_name": "Deepak Yadav"
       },
-      "status": "REPORTED",
+      "status": "IN_PROGRESS",
       "status_history": [
         {
           "status": "REPORTED",
           "timestamp": "2026-09-18T14:30:00Z",
           "updated_by": "CE24055",
           "note": "Reported by Library Student Assistant"
+        },
+        {
+          "status": "VERIFIED",
+          "timestamp": "2026-10-12T09:25:22.353Z",
+          "updated_by": "ADMIN001",
+          "note": "Status changed to VERIFIED"
+        },
+        {
+          "status": "IN_PROGRESS",
+          "timestamp": "2026-10-12T09:25:33.249Z",
+          "updated_by": "ADMIN001",
+          "note": "Status changed to IN_PROGRESS"
+        },
+        {
+          "status": "ASSIGNED",
+          "timestamp": "2026-10-12T09:25:57.523Z",
+          "updated_by": "ADMIN001",
+          "note": "Assigned to Plumbing & Sanitation"
         }
       ],
       "resolution": null,
       "created_at": "2026-09-18T14:30:00Z",
-      "updated_at": "2026-09-18T14:30:00Z"
+      "updated_at": "2026-10-12T09:25:57.523Z"
     },
     {
       "ticket_id": "CPT-2026-0005",
@@ -657,7 +726,7 @@
       "title": "New Problem Ticket",
       "message": "New problem reported: Library 3rd floor AC leaking water (CPT-2026-0006).",
       "timestamp": "2026-10-06T05:57:57.246Z",
-      "read": false,
+      "read": true,
       "type": "INFO",
       "ticket_id": "CPT-2026-0006"
     },
@@ -666,7 +735,7 @@
       "title": "Critical Problem Escalated",
       "message": "Critical electrical sub-panel tripping reported in Block B Physics Lab (CPT-2026-0002).",
       "timestamp": "2026-09-16T11:05:00Z",
-      "read": false,
+      "read": true,
       "type": "CRITICAL",
       "ticket_id": "CPT-2026-0002"
     },
@@ -675,12 +744,62 @@
       "title": "New Problem Submitted",
       "message": "Wi-Fi outage reported in Block C 3rd Floor (CPT-2026-0001). Priority set to HIGH by student.",
       "timestamp": "2026-09-15T10:32:00Z",
-      "read": false,
+      "read": true,
       "type": "INFO",
       "ticket_id": "CPT-2026-0001"
     }
   ],
   "student_notifications": [
+    {
+      "id": "snotif_1791797157536",
+      "title": "Ticket Assigned",
+      "message": "Your ticket CPT-2026-0004 has been assigned to Plumbing & Sanitation.",
+      "timestamp": "2026-10-12T09:25:57.523Z",
+      "read": true,
+      "type": "INFO",
+      "ticket_id": "CPT-2026-0004",
+      "user_id": "CE24055"
+    },
+    {
+      "id": "snotif_1791797133260",
+      "title": "Ticket Status: IN_PROGRESS",
+      "message": "Status for ticket CPT-2026-0004 changed to IN_PROGRESS.",
+      "timestamp": "2026-10-12T09:25:33.249Z",
+      "read": true,
+      "type": "INFO",
+      "ticket_id": "CPT-2026-0004",
+      "user_id": "CE24055"
+    },
+    {
+      "id": "snotif_1791797122362",
+      "title": "Ticket Status: VERIFIED",
+      "message": "Status for ticket CPT-2026-0004 changed to VERIFIED.",
+      "timestamp": "2026-10-12T09:25:22.353Z",
+      "read": true,
+      "type": "INFO",
+      "ticket_id": "CPT-2026-0004",
+      "user_id": "CE24055"
+    },
+    {
+      "id": "snotif_1791796946426",
+      "title": "Ticket Status: IN_PROGRESS",
+      "message": "Status for ticket CPT-2026-0006 changed to IN_PROGRESS.",
+      "timestamp": "2026-10-12T09:22:26.414Z",
+      "read": true,
+      "type": "INFO",
+      "ticket_id": "CPT-2026-0006",
+      "user_id": "CS24001"
+    },
+    {
+      "id": "snotif_1791796942461",
+      "title": "Ticket Assigned",
+      "message": "Your ticket CPT-2026-0006 has been assigned to Plumbing & Sanitation.",
+      "timestamp": "2026-10-12T09:22:22.451Z",
+      "read": false,
+      "type": "INFO",
+      "ticket_id": "CPT-2026-0006",
+      "user_id": "CS24001"
+    },
     {
       "id": "snotif_1791266277246",
       "title": "Ticket Submitted",
@@ -710,6 +829,18 @@
       "type": "INFO",
       "ticket_id": "CPT-2026-0001",
       "user_id": "CS24001"
+    }
+  ],
+  "users": [
+    {
+      "id": "usr_cs24001",
+      "college_id": "CS24001",
+      "name": "Alex Johnson",
+      "email": "cs24001@college.edu",
+      "role": "student",
+      "department": "Computer Science & Engineering",
+      "year": "3rd Year B.Tech",
+      "avatar": null
     }
   ]
 }

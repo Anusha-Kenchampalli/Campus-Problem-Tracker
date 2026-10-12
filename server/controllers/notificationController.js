@@ -1,8 +1,8 @@
-import Notification from '../models/Notification.js';
+import { getCollection, saveCollection } from '../config/jsonStore.js';
 
 export const getStudentNotifications = async (req, res) => {
   try {
-    const notifications = await Notification.find({ target: 'STUDENT' }).sort({ createdAt: -1 });
+    const notifications = getCollection('student_notifications');
     return res.json({ success: true, notifications });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -11,12 +11,12 @@ export const getStudentNotifications = async (req, res) => {
 
 export const markStudentNotificationRead = async (req, res) => {
   try {
-    const notif = await Notification.findOneAndUpdate(
-      { notif_id: req.params.id },
-      { read: true },
-      { new: true }
-    );
-    const notifications = await Notification.find({ target: 'STUDENT' }).sort({ createdAt: -1 });
+    const notifications = getCollection('student_notifications');
+    const idx = notifications.findIndex(n => n.id === req.params.id);
+    if (idx !== -1) {
+      notifications[idx].read = true;
+      saveCollection('student_notifications', notifications);
+    }
     return res.json({ success: true, notifications });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -25,7 +25,7 @@ export const markStudentNotificationRead = async (req, res) => {
 
 export const getAdminNotifications = async (req, res) => {
   try {
-    const notifications = await Notification.find({ target: 'ADMIN' }).sort({ createdAt: -1 });
+    const notifications = getCollection('admin_notifications');
     return res.json({ success: true, notifications });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -34,11 +34,12 @@ export const getAdminNotifications = async (req, res) => {
 
 export const markAdminNotificationRead = async (req, res) => {
   try {
-    await Notification.findOneAndUpdate(
-      { notif_id: req.params.id },
-      { read: true }
-    );
-    const notifications = await Notification.find({ target: 'ADMIN' }).sort({ createdAt: -1 });
+    const notifications = getCollection('admin_notifications');
+    const idx = notifications.findIndex(n => n.id === req.params.id);
+    if (idx !== -1) {
+      notifications[idx].read = true;
+      saveCollection('admin_notifications', notifications);
+    }
     return res.json({ success: true, notifications });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });

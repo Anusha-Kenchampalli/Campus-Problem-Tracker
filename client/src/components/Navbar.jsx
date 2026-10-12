@@ -14,7 +14,7 @@ const Navbar = ({ onToggleMobileSidebar, unreadNotificationsCount = 0 }) => {
   };
 
   return (
-    <header className="sticky top-0 z-20 bg-slate-900/90 dark:bg-slate-900/90 light:bg-white/90 backdrop-blur-md border-b border-slate-800/80 dark:border-slate-800/80 light:border-slate-200 px-4 sm:px-6 py-3 transition-colors duration-200">
+    <header className="sticky top-0 z-30 bg-slate-900/95 dark:bg-slate-900/95 light:bg-white/95 backdrop-blur-md border-b border-slate-800/80 dark:border-slate-800/80 light:border-slate-200 px-4 sm:px-6 py-3 transition-colors duration-200 shrink-0">
       <div className="flex items-center justify-between">
         {/* Left section: Mobile menu & API status */}
         <div className="flex items-center space-x-3">

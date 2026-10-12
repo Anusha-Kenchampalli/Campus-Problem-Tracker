@@ -1,8 +1,8 @@
-import Location from '../models/Location.js';
+import { getCollection, saveCollection } from '../config/jsonStore.js';
 
 export const getLocations = async (req, res) => {
   try {
-    const locations = await Location.find({});
+    const locations = getCollection('locations');
     return res.json({ success: true, locations });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -12,12 +12,21 @@ export const getLocations = async (req, res) => {
 export const createLocation = async (req, res) => {
   try {
     const locData = req.body;
-    const newLocation = await Location.create({
-      loc_id: `loc_${Date.now()}`,
-      ...locData,
+    const locations = getCollection('locations');
+
+    const newLocation = {
+      id: `loc_${Date.now()}`,
+      name: locData.name || '',
+      building: locData.building || '',
+      floor: locData.floor || '',
+      rooms: locData.rooms || '',
       active_issues: 0,
       status: 'ACTIVE'
-    });
+    };
+
+    locations.push(newLocation);
+    saveCollection('locations', locations);
+
     return res.status(201).json({ success: true, location: newLocation, message: 'Location added' });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -26,13 +35,14 @@ export const createLocation = async (req, res) => {
 
 export const updateLocation = async (req, res) => {
   try {
-    const location = await Location.findOneAndUpdate(
-      { loc_id: req.params.id },
-      req.body,
-      { new: true }
-    );
-    if (!location) return res.status(404).json({ success: false, message: 'Location not found' });
-    return res.json({ success: true, location, message: 'Location updated' });
+    const locations = getCollection('locations');
+    const idx = locations.findIndex(l => l.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ success: false, message: 'Location not found' });
+
+    locations[idx] = { ...locations[idx], ...req.body };
+    saveCollection('locations', locations);
+
+    return res.json({ success: true, location: locations[idx], message: 'Location updated' });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
