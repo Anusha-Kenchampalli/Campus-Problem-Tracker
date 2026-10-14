@@ -5,8 +5,8 @@ import { ShieldCheck, Eye, EyeOff, Lock, User, AlertCircle, ArrowRight } from 'l
 import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
-  const [collegeId, setCollegeId] = useState('ADMIN001');
-  const [password, setPassword] = useState('password');
+  const [collegeId, setCollegeId] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -159,12 +159,6 @@ const Login = () => {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-            </div>
-
-            {/* Default Demo hint */}
-            <div className="bg-indigo-950/40 p-3 rounded-xl border border-indigo-500/20 text-[11px] text-indigo-300 flex justify-between items-center">
-              <span>Demo Admin ID: <strong className="font-mono text-white">ADMIN001</strong></span>
-              <span>Pass: <strong className="font-mono text-white">password</strong></span>
             </div>
 
             {/* Submit Button */}
